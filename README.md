@@ -2,7 +2,7 @@
 
 ## Table of Contents
 
-- [Recommendation](#Recommendation)
+-[Recommendation](#Recommendation)
 
 
 ### Project Overview
@@ -68,9 +68,6 @@ To analyze this project I first looked at the correlation between Trucking Produ
 
 Correlation Between Truck Activity and Inventory Sales Ratio, Manufacturing
 ```sql
-SELECT *
-FROM transportation_analysis AS ta;
-
 SELECT 
 	corr(truck_activity_index, industrial_production) AS truck_activity_ind_production,
 	corr(truck_activity_index, inventory_to_sales_ratio) AS truck_activity_sales_ratio,
@@ -82,6 +79,12 @@ Outputting
 
 
 <img width="456" alt="Corr Trucking" src="https://github.com/user-attachments/assets/b2e2b77b-4342-487d-b83d-ebf0b6b2f06d">
+
+Graph the Scatter Plots of the Correlations with Python
+
+```Python
+
+
 
 
 ```sql
@@ -114,9 +117,80 @@ Output
 <img width="466" alt="Trucking Downturn" src="https://github.com/user-attachments/assets/ba7f543f-f2f1-42cb-ad6f-65171b4d7992">
 
 
+Compare Max Production year to Max Trucking Year
+
 ```sql
-SELECT * FROM table1 WHERE condition = 2;
+WITH max_production_year AS 
+(
+SELECT EXTRACT(year FROM observation_date) AS year, MAX(industrial_production) AS peak_industry_production
+FROM transportation_analysis
+GROUP BY year
+),
+
+max_trucking_year AS (
+SELECT EXTRACT(year FROM observation_date) AS year, MAX(truck_activity_index) AS peak_trucking_activity
+FROM transportation_analysis
+GROUP BY year
+)
+
+SELECT pro.year, pro.peak_industry_production, truck.peak_trucking_activity
+FROM max_production_year AS pro
+LEFT JOIN max_trucking_year AS truck
+ON pro.year = truck.year
+ORDER BY truck.peak_trucking_activity DESC;
 ```
+
+Comparing medians between bad, good, and recent economic periods 
+
+
+```sql
+WITH historical_downturn_median_production AS (
+
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS downturn_median
+
+FROM transportation_analysis
+
+WHERE EXTRACT(year FROM observation_date) IN (2008,2020)
+
+),
+
+historical_upturn_median_production AS (
+
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS upturn_median
+
+FROM transportation_analysis
+
+WHERE EXTRACT(year FROM observation_date) IN (2018)
+
+),
+
+recent_median_production AS (
+
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS recent_median
+
+FROM transportation_analysis
+
+WHERE EXTRACT(year FROM observation_date) IN (2023,2024)
+
+),
+
+
+
+comparison_analysis AS (
+
+SELECT ROUND(CAST(downturn_median AS NUMERIC),2) AS downturn, ROUND(CAST(upturn_median AS NUMERIC),2) AS upturn, ROUND(CAST(recent_median AS NUMERIC),2) AS recent
+
+FROM historical_downturn_median_production, historical_upturn_median_production, recent_median_production
+
+)
+
+SELECT *
+
+FROM comparison_analysis;
+
+
+```
+
 
 ### Results/Findings 
 
