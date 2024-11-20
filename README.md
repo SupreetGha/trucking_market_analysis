@@ -1,29 +1,32 @@
 # Trucking Analysis
 
 ## Table of Contents
-
--[Recommendation](#Recommendation)
+- [Data Cleaning](#data-cleaning)
+- [Exploratory Analysis](#exploratory-data-analysis)
+- [Data Analysis](#data-analysis)
+- [Findings](#findings)
+- [Recommendation](#recommendation)
+- [Limitations](#limitations)
 
 
 ### Project Overview
 ---
 
-The project is intended to help my father's trucking business by answering the question "Should I expand my business or hold off?". The question at hand is answered by highlighting the trends within the trucking market, comparing the current numbers to the numbers of economic downturns, and assesing where the current market is in relation to prior markets.
+The purpose of this project is to evaluate the state of the trucking industry to assist my father’s trucking business in making a key decision: whether to expand operations or maintain the current scale. This analysis aims to identify market trends, compare current industry metrics to historical downturns, and evaluate the trucking sector's performance in the broader economic context.
 
 ### Data Source(s)
 
-The Dataset is called Freight Analysis Framwork and is sourced via the Department of Transportation is sourced via [here](https://catalog.data.gov/dataset/freight-analysis-framework).
-### Tools
+Freight Analysis Framework: Sourced from the Department of Transportation via [here](https://catalog.data.gov/dataset/freight-analysis-framework).
 
-This is where I would list the tools used 
+### Tools
 
   - SQL - Data Analysis
   - Python - Cleaning and Visualization
   - Excel - Organizing the Original Dataset
 
-### Data Cleaning/Preparation
+### Data Cleaning
 
-After the Data was downloaded I loaded data into Jupyter Notebook via
+Loaded Raw CSV into Python
 
 ```Python
 import pandas as pd
@@ -34,7 +37,8 @@ data = pd.read_csv(file_path)
 # Preview the first few rows
 print(data.head())
 ```
-Then I filtered the CSV for only the columns I needed via 
+Filtered for Relevant Columns
+ 
 ```python
 # List of columns to keep
 selected_columns = ['OBS_DATE', 'TRUCK_D11', 'TSI_Freight', 'TSI_Total', 'IND_PRO', 'MANUF', 'INV_TO_SALES']
@@ -43,7 +47,7 @@ filtered_truck_data = data[selected_columns]
 # Preview the filtered data
 print(filtered_truck_data.head())
 ```
-Then Saved file
+Saved file
 ```
 # Save the filtered data to a new CSV
 filtered_file_path = 'filtered_transportation_data.csv'
@@ -51,22 +55,46 @@ filtered_truck_data.to_csv(filtered_file_path, index=False)
 
 print(f"Filtered data saved to {filtered_file_path}")
 ```
-Then formatted and exported the file 
+Formatted and Exported file
 ```
 # Load the file (adjust delimiter if needed, e.g., ',' or '\t')
 df = pd.read_csv("filtered_transportation_data.csv")
 # Save the file with proper formatting
 df.to_csv("cleaned_transportation_data.csv", index=False, sep=",")
 ```
-Then Opened it in PostgresSQL
 
 ### Exploratory Data Analysis
 
-To analyze this project I first looked at the correlation between Trucking Production Column and the columns of manufacturing and inventory to sales ratio. Then I rescaled the Data, grouped by year and analyzed trucking production by month since 2021. Years past 2021 indicate data post covid and more recent data. Next step was analyzing where the current market is in relation to previous markets. I did this by analyzing historic downturns and recent data in comparing production and inventory to sales ratio.
+#### Key Areas
+
+1. Correlation Analysis:
+	- Assessed relationships between trucking activity, industrial production, and inventory-to-sales ratio.
+	- Key correlations:
+		- Truck Activity vs. Industrial Production
+		- Truck Activity vs. Inventory-to-Sales Ratio
+
+2. Rescaling and Trend Analysis:
+
+	- Rescaled monthly data to identify seasonality trends in trucking activity post-2021 (post-COVID-19).
+
+3. Historical Comparison:
+
+	- Compared current averages of trucking activity and inventory ratios with historical economic downturns (2008, 2020).
+
+Focus on metrics relevant to decision-making:
+
+- Inventory-to-Sales Ratio: Highlights market health and demand fluctuations.
+- Industrial Production: Indicates economic activity levels.
+- Trucking Activity: Directly tied to your father's business.
 
 ### Data Analysis 
 
-Correlation Between Truck Activity and Inventory Sales Ratio, Manufacturing
+#### Correlation Analysis
+
+<details open>
+<summary>Click for Code</summary>
+<br>
+
 ```sql
 SELECT 
 	corr(truck_activity_index, industrial_production) AS truck_activity_ind_production,
@@ -75,33 +103,124 @@ SELECT
 
 FROM transportation_analysis;
 ```
+</details>
+
+
 Outputting 
 
-
+#### 1.1
 <img width="456" alt="Corr Trucking" src="https://github.com/user-attachments/assets/b2e2b77b-4342-487d-b83d-ebf0b6b2f06d">
 
-Graph the Scatter Plots of the Correlations with Python
+#### Findings:
+	- Positive Correlation between Truck Activity Industrial Production, and Manufacturing
+ 	- Negative Correlation between Truck Activity and Inventory to Sales Ratio
 
+
+#### Correlation Visuals
+
+<details open>
+<summary>Click for Code</summary>
+<br>
+	
 ```Python
+import pandas as pd
+import matplotlib.pyplot as plt
 
+file_path = 'Transportation_Services_Index_and_Seasonally-Adjusted_Transportation_Data.csv'
+data = pd.read_csv(file_path)
+df_subset = data[["TSI_Freight", "IND_PRO"]].dropna()
 
+plt.figure(figsize=(8, 6))
+plt.scatter(
+    df_subset["TSI_Freight"],
+    df_subset["IND_PRO"],
+    color="blue", alpha=0.7
+)
+plt.title("Freight Transport Index vs Industrial Production", fontsize=14)
+plt.xlabel("TSI_Freight", fontsize=12)
+plt.ylabel("IND_PRO", fontsize=12)
+plt.grid(alpha=0.5, linestyle="--")
+plt.tight_layout()
+plt.show()
+```
+</details>
 
+#### 1.2
+<img width="713" alt="Scatter Plot of Freight Index and Industrial Production" src="https://github.com/user-attachments/assets/4773b4ef-e279-406a-bb7e-f5e1a44fc1cf">
+
+<details open>
+<summary>Click for Code</summary>
+<br>
+
+```python
+df_subset_2 = data[["TSI_Freight", "INV_TO_SALES"]].dropna()
+
+plt.figure(figsize=(8, 6))
+plt.scatter(
+    df_subset_2["TSI_Freight"],
+    df_subset_2["INV_TO_SALES"],
+    color="blue", alpha=0.7
+)
+plt.title("Freight Transport Index vs Inventory To Sales Ratio", fontsize=14)
+plt.xlabel("TSI_Freight", fontsize=12)
+plt.ylabel("INV_TO_SALES", fontsize=12)
+plt.grid(alpha=0.5, linestyle="--")
+plt.tight_layout()
+plt.show()
+
+```
+</details>
+
+#### 1.3
+<img width="667" alt="Scatter Plot of Freight Index and Inventory to Sales Ratio " src="https://github.com/user-attachments/assets/c12757b6-00cc-4366-be1b-e2c1ae2645ef">
+
+<details open>
+<summary>Click for Code</summary>
+<br>
+
+```python
+
+df_subset_3 = data[["TSI_Freight", "MANUF"]].dropna()
+plt.figure(figsize=(8, 6))
+plt.scatter(
+    df_subset_3["TSI_Freight"],
+    df_subset_3["MANUF"],
+    color="blue", alpha=0.7
+)
+plt.title("Freight Transport Index vs Inventory To Sales Ratio", fontsize=14)
+plt.xlabel("TSI_Freight", fontsize=12)
+plt.ylabel("MANUF", fontsize=12)
+plt.grid(alpha=0.5, linestyle="--")
+plt.tight_layout()
+plt.show()
+
+```
+</details>
+
+#### 1.4
+<img width="680" alt="Freight to Manuf Correlation Scatter Plot" src="https://github.com/user-attachments/assets/fe523a1b-dd11-4825-9f3b-0c078d135fb2">
+
+<details open>
+<summary>Click for Code</summary>
+<br>
+
+#### Historical Averages Comparison
 
 ```sql
 WITH historical_downturns AS (
     SELECT 
-        AVG(inventory_to_sales_ratio) AS avg_inventory_ratio_downturn,
-        AVG(truck_activity_index) AS avg_truck_activity_downturn
+        AVG(INV_TO_SALES) AS avg_inventory_ratio_downturn,
+        AVG(TRUCK_D11) AS avg_truck_activity_downturn
     FROM transportation_analysis
-    WHERE EXTRACT(year FROM observation_date) IN (2008, 2020)
+    WHERE EXTRACT(year FROM OBS_DATE) IN (2008, 2020)
 ),
 
 recent_data AS (
     SELECT 
-        AVG(inventory_to_sales_ratio) AS avg_inventory_ratio_recent,
-        AVG(truck_activity_index) AS avg_truck_activity_recent
+        AVG(INV_TO_SALES) AS avg_inventory_ratio_recent,
+        AVG(TRUCK_D11) AS avg_truck_activity_recent
     FROM transportation_analysis
-    WHERE observation_date >= '2024-01-01'
+    WHERE OBS_DATE >= '2024-01-01'
 ),
 comparison AS (
     SELECT 
@@ -112,99 +231,108 @@ comparison AS (
     FROM historical_downturns, recent_data)
 SELECT * FROM comparison;
 ```
-Output
+</details>
 
+#### 1.5
 <img width="466" alt="Trucking Downturn" src="https://github.com/user-attachments/assets/ba7f543f-f2f1-42cb-ad6f-65171b4d7992">
 
 
-Compare Max Production year to Max Trucking Year
 
-```sql
-WITH max_production_year AS 
-(
-SELECT EXTRACT(year FROM observation_date) AS year, MAX(industrial_production) AS peak_industry_production
-FROM transportation_analysis
-GROUP BY year
-),
+<details open>
+<summary>Click for Code</summary>
+<br>
 
-max_trucking_year AS (
-SELECT EXTRACT(year FROM observation_date) AS year, MAX(truck_activity_index) AS peak_trucking_activity
-FROM transportation_analysis
-GROUP BY year
-)
+```python
 
-SELECT pro.year, pro.peak_industry_production, truck.peak_trucking_activity
-FROM max_production_year AS pro
-LEFT JOIN max_trucking_year AS truck
-ON pro.year = truck.year
-ORDER BY truck.peak_trucking_activity DESC;
+df['OBS_DATE'] = pd.to_datetime(df['OBS_DATE'])
+df = df.sort_values('OBS_DATE')
+columns_to_plot = ['IND_PRO', 'TSI_Freight', 'TRUCK_D11']
+plt.figure(figsize=(12, 6))
+for column in columns_to_plot:
+    plt.plot(df['OBS_DATE'], df[column], label=column.replace('_', ' ').title())
+plt.xlabel('Observation Date', fontsize=12)
+plt.ylabel('Scaled Index', fontsize=12)
+plt.title('Industrial Production, Freight Activity, and Trucking Activity', fontsize=14)
+plt.legend(fontsize=10)
+plt.grid(alpha=0.5, linestyle='--')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
 ```
+</details>
 
-Comparing medians between bad, good, and recent economic periods 
+
+#### Line Graph
+
+#### 1.6
+
+<img width="845" alt="Line Graph-Industry_Freight_Trucking" src="https://github.com/user-attachments/assets/20431499-7168-47fb-ba1b-64b3a0377b38">
+
+
+
+Medians in bad, good, and recent economic periods 
+
+<details open>
+<summary>Click for Code</summary>
+<br>
+
 
 
 ```sql
 WITH historical_downturn_median_production AS (
-
-SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS downturn_median
-
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY IND_PRO) AS downturn_median
 FROM transportation_analysis
-
-WHERE EXTRACT(year FROM observation_date) IN (2008,2020)
-
+WHERE EXTRACT(year FROM OBS_DATE) IN (2008,2020)
 ),
-
 historical_upturn_median_production AS (
-
-SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS upturn_median
-
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY IND_PRO) AS upturn_median
 FROM transportation_analysis
-
 WHERE EXTRACT(year FROM observation_date) IN (2018)
-
 ),
-
 recent_median_production AS (
-
-SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS recent_median
-
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY IND_PRO) AS recent_median
 FROM transportation_analysis
-
 WHERE EXTRACT(year FROM observation_date) IN (2023,2024)
-
 ),
-
-
-
 comparison_analysis AS (
-
 SELECT ROUND(CAST(downturn_median AS NUMERIC),2) AS downturn, ROUND(CAST(upturn_median AS NUMERIC),2) AS upturn, ROUND(CAST(recent_median AS NUMERIC),2) AS recent
-
 FROM historical_downturn_median_production, historical_upturn_median_production, recent_median_production
-
 )
-
 SELECT *
-
 FROM comparison_analysis;
-
-
 ```
 
+</details>
 
-### Results/Findings 
 
-This section would go over the results/findings that I found
+Results
+
+#### 1.7
+
+<img width="218" alt="Medians for Periods of the Economy" src="https://github.com/user-attachments/assets/1578ec8a-9b98-4380-a71c-8b2fcb7bcb8f">
+
+
+
+### Findings 
+
+#### Key Metrics Compared to Historical Downturns:
+
+- Inventory ratios remain high, suggesting weaker demand and greater inventory in idle
+- Figure [1.6](#1.6) demonstrates a high level of truck activity and a lower level of production meaning there is a greater supply of trucks compared to production 
+- Trucking activity has not recovered to pre-COVID levels
+
 
 ### Recommendation
 
-Given the current average inventory ratio being close to the inventory ratio during economic downturns of 2008 and 2020, expanding the trucking industry would not be advised. Looking at average truck activity by month, the industry benefits the most when it was around late December and early next year.
+Given the current data:
 
+	- Expanding operations is not recommended due to weak market demand and higher supply of trucks compared to production
+	- Focus on optimizing costs and targeting high-demand periods in late Q4 and early Q4
+ 	- Wait for a decrease in truck activity and an increase in production
 
 ### Limitations
 
-The data itself, while from the US government, fails to factor in external variables such as the affect that elections have on the economy and the geopolotics at play.
+	- Economic Factors: The analysis does not account for external variables such as geopolitical events or elections.
+	- Data Granularity: Industry-level data may not fully reflect regional construction trucking trends.
 
-### References
-
-Where I found the code and what or who helped indirectly 
+[Go Back Up](#trucking-analysis)
