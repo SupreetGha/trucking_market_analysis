@@ -106,14 +106,18 @@ FROM transportation_analysis;
 </details>
 
 
-Outputting 
+#### Figure 1.1
 
-#### 1.1
-<img width="456" alt="Corr Trucking" src="https://github.com/user-attachments/assets/b2e2b77b-4342-487d-b83d-ebf0b6b2f06d">
+| Metric                           | Correlation Value |
+|----------------------------------|-------------------|
+| Truck Activity ↔ Industrial Production | 0.75              |
+| Truck Activity ↔ Sales Ratio         | -0.64             |
+| Truck Activity ↔ Manufacturing       | 0.81              |
+
 
 #### Findings:
-	- Positive Correlation between Truck Activity Industrial Production, and Manufacturing
- 	- Negative Correlation between Truck Activity and Inventory to Sales Ratio
+- Positive Correlation between Truck Activity Industrial Production, and Manufacturing
+- Negative Correlation between Truck Activity and Inventory to Sales Ratio
 
 
 #### Correlation Visuals
@@ -145,7 +149,7 @@ plt.show()
 ```
 </details>
 
-#### 1.2
+#### Figure 1.2
 <img width="713" alt="Scatter Plot of Freight Index and Industrial Production" src="https://github.com/user-attachments/assets/4773b4ef-e279-406a-bb7e-f5e1a44fc1cf">
 
 <details open>
@@ -171,7 +175,7 @@ plt.show()
 ```
 </details>
 
-#### 1.3
+#### Figure 1.3
 <img width="667" alt="Scatter Plot of Freight Index and Inventory to Sales Ratio " src="https://github.com/user-attachments/assets/c12757b6-00cc-4366-be1b-e2c1ae2645ef">
 
 <details open>
@@ -197,15 +201,15 @@ plt.show()
 ```
 </details>
 
-#### 1.4
+#### Figure 1.4
 <img width="680" alt="Freight to Manuf Correlation Scatter Plot" src="https://github.com/user-attachments/assets/fe523a1b-dd11-4825-9f3b-0c078d135fb2">
 
+
+#### Historical Averages Comparison
 <details open>
 <summary>Click for Code</summary>
 <br>
-
-#### Historical Averages Comparison
-
+	
 ```sql
 WITH historical_downturns AS (
     SELECT 
@@ -233,8 +237,103 @@ SELECT * FROM comparison;
 ```
 </details>
 
-#### 1.5
-<img width="466" alt="Trucking Downturn" src="https://github.com/user-attachments/assets/ba7f543f-f2f1-42cb-ad6f-65171b4d7992">
+#### Figure 1.5
+
+
+| Metric                   | Downturn Average | Recent Average |
+|--------------------------|------------------|----------------|
+| Inventory Ratio          | 1.4275          | 1.3088         |
+| Truck Activity           | 98.6625         | 113.6556       |
+
+
+##### Medians in bad, good, and recent economic periods 
+
+<details open>
+<summary>Click for Code</summary>
+<br>
+
+```sql
+WITH historical_downturn_median_production AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS downturn_median
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2008,2020)
+),
+downturn_inv AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY inventory_to_sales_ratio) AS downturn_median_inv
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2008,2020)
+),
+historical_upturn_median_production AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS upturn_median
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2018,2019)
+),
+upturn_inv AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY inventory_to_sales_ratio) AS upturn_median_inv
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2018,2019)
+),
+recent_median_production AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY industrial_production) AS recent_median
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2023,2024)
+),
+recent_median_inv AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY inventory_to_sales_ratio) AS recent_median_inv
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2023,2024)
+),
+downturn_truck AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY truck_activity_index) AS down_truck
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2008,2020)
+),
+upturn_truck AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY truck_activity_index) AS up_truck
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2018,2019)
+),
+recent_truck AS (
+SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY truck_activity_index) AS recent_truck
+FROM transportation_analysis
+WHERE EXTRACT(year FROM observation_date) IN (2023,2024)
+),
+comparison_analysis AS (
+SELECT 
+ROUND(CAST(downturn_median AS NUMERIC),2) AS downturn_prod, 
+ROUND(CAST(upturn_median AS NUMERIC),2) AS upturn_prod, 
+ROUND(CAST(recent_median AS NUMERIC),2) AS recent_prod, 
+ROUND(CAST(recent_median_inv AS NUMERIC),2) AS recent_inv, 
+ROUND(CAST(upturn_median_inv AS NUMERIC),2) AS upturn_inv, 
+ROUND(CAST(downturn_median_inv AS NUMERIC),2) AS downturn_inv,
+ROUND(CAST(down_truck AS NUMERIC),2) AS downturn_truck,
+ROUND(CAST(up_truck AS NUMERIC),2) AS up_truck,
+ROUND(CAST(recent_truck AS NUMERIC),2) AS recent_truck
+
+FROM 
+historical_downturn_median_production, 
+downturn_inv, 
+historical_upturn_median_production, 
+upturn_inv, recent_median_production, 
+recent_median_inv, 
+downturn_truck,
+upturn_truck, 
+recent_truck
+)
+SELECT *
+FROM comparison_analysis
+```
+</details>
+
+
+#### Figure 1.6
+
+
+| Metric               | Downturn | Upturn | Recent |
+|-----------------------|----------|--------|--------|
+| Production           | 105.18   | 111.00 | 111.15 |
+| Inventory Ratio      | 1.48     | 1.46   | 1.28   |
+| Trucking Activity    | 97.05    | 116.00 | 114.50 |
 
 
 
@@ -262,55 +361,9 @@ plt.show()
 </details>
 
 
-#### Line Graph
-
-#### 1.6
+#### Figure 1.7
 
 <img width="845" alt="Line Graph-Industry_Freight_Trucking" src="https://github.com/user-attachments/assets/20431499-7168-47fb-ba1b-64b3a0377b38">
-
-
-
-Medians in bad, good, and recent economic periods 
-
-<details open>
-<summary>Click for Code</summary>
-<br>
-
-
-
-```sql
-WITH historical_downturn_median_production AS (
-SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY IND_PRO) AS downturn_median
-FROM transportation_analysis
-WHERE EXTRACT(year FROM OBS_DATE) IN (2008,2020)
-),
-historical_upturn_median_production AS (
-SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY IND_PRO) AS upturn_median
-FROM transportation_analysis
-WHERE EXTRACT(year FROM observation_date) IN (2018)
-),
-recent_median_production AS (
-SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY IND_PRO) AS recent_median
-FROM transportation_analysis
-WHERE EXTRACT(year FROM observation_date) IN (2023,2024)
-),
-comparison_analysis AS (
-SELECT ROUND(CAST(downturn_median AS NUMERIC),2) AS downturn, ROUND(CAST(upturn_median AS NUMERIC),2) AS upturn, ROUND(CAST(recent_median AS NUMERIC),2) AS recent
-FROM historical_downturn_median_production, historical_upturn_median_production, recent_median_production
-)
-SELECT *
-FROM comparison_analysis;
-```
-
-</details>
-
-
-Results
-
-#### 1.7
-
-<img width="218" alt="Medians for Periods of the Economy" src="https://github.com/user-attachments/assets/1578ec8a-9b98-4380-a71c-8b2fcb7bcb8f">
-
 
 
 ### Findings 
@@ -318,7 +371,7 @@ Results
 #### Key Metrics Compared to Historical Downturns:
 
 - Inventory ratios remain high, suggesting weaker demand and greater inventory in idle
-- Figure [1.6](#1.6) demonstrates a high level of truck activity and a lower level of production meaning there is a greater supply of trucks compared to production 
+- [Figure 1.6](#figure-17) demonstrates a high level of truck activity and a lower level of production meaning there is a greater supply of trucks compared to production 
 - Trucking activity has not recovered to pre-COVID levels
 
 
@@ -326,13 +379,14 @@ Results
 
 Given the current data:
 
-	- Expanding operations is not recommended due to weak market demand and higher supply of trucks compared to production
-	- Focus on optimizing costs and targeting high-demand periods in late Q4 and early Q4
- 	- Wait for a decrease in truck activity and an increase in production
+- Expanding operations is not recommended due to weak market demand and higher supply of trucks compared to production
+- Focus on optimizing costs and targeting high-demand periods in late Q4 and early Q4
+- Wait for a decrease in truck activity in relation to an increase in production
+- Wait for the average Inventory to Sales ratio to drop as it is close to previous economic downturns 
 
 ### Limitations
 
-	- Economic Factors: The analysis does not account for external variables such as geopolitical events or elections.
-	- Data Granularity: Industry-level data may not fully reflect regional construction trucking trends.
+- Economic Factors: The analysis does not account for external variables such as geopolitical events or elections.
+- Data Granularity: Industry-level data may not fully reflect regional construction trucking trends.
 
 [Go Back Up](#trucking-analysis)
